@@ -1,0 +1,112 @@
+---
+title: "Tuto tidyverse"
+output: 
+    html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE,
+                      warning = FALSE)
+```
+
+Bienvenue dans le *tidyverse*.
+
+Voici une petite sélection des fonctions utiles pour la manipulation de data.frame.
+
+```{r}
+library(tidyverse) # charge plusieurs packages
+```
+
+# Readr: importer des datas (et écrire)
+
+```{r}
+data <- read_tsv("./data_note.tsv")
+# write_tsv(data, file = "./data_note.tsv")
+```
+
+# %>%
+
+Le pipe prend l'output de la précédente commande et l'envoie dans le premier argument de la commande suivante.
+
+```{r}
+data %>% head()  # = head(data)
+
+```
+
+# dplyr
+
+## Selection des colonnes (select)
+
+*Plusieurs packages ont une fonction `select()`, on explicite celle de dplyr avec `dplyr::select()`*
+
+```{r}
+data %>% dplyr::select(c(ID, E1))
+```
+
+## Filtrer les lignes (filter)
+
+```{r}
+data %>% filter(E1 > 90)
+```
+
+## Ajouter des colonnes (mutate)
+
+```{r}
+data %>% mutate(Moyenne_Exam = (E1+E2)/2)
+```
+
+## Trier (arrange)
+
+```{r}
+data %>% arrange(desc(E2)) # ordre décroissant
+data %>% arrange(E2)   # ordre croissant
+```
+
+## Jointure
+
+Permet de joindre 2 tables qui ont une ou plusieurs colonnes en commun.
+Il a plusieurs de type de jointure: `left_join`, `right_join`, `full_join`, `inner_join`, ...
+
+Soit le data.frame *Sex* qui contient le sexe (colonne sexe) de étudiants (colonne ID_s).
+```{r}
+Sexe <- data.frame(ID_s = data$ID, 
+                   sexe = sample(c("M","F"), replace = T, size = length(data$ID)))
+head(Sexe)
+left_join(data, Sexe, by = c("ID" = "ID_s"))
+```
+
+## Group_by et summarise
+
+La combinaison des 2 outils permets de créer des sous-groupes et réaliser des opérations sur ces sous-groupes.
+
+```{r}
+# moyenne des E2 par année et par cohorte
+data  %>% group_by(Année, Cohorte) %>% 
+    summarise(Moyenne_Y_E2 = mean(E2))
+
+# nombre d'étudiants par année
+data  %>% group_by(Année) %>% 
+    summarise(N = n())
+```
+
+# tidyr
+
+## passer un data.frame au format *long*
+
+```{r}
+tmp.long <- data %>% 
+    pivot_longer(names_to = "Type_Control", # colonne nom de variable
+                 values_to = "Note", # colonne contenu
+                 -c(ID, Année, Cohorte)) # colonne a ne pas transformer
+
+tmp.long
+```
+
+## dans l'autre sens (format large)
+
+```{r}
+tmp.long %>% pivot_wider(names_from = Type_Control, 
+                         values_from = Note)
+```
+
