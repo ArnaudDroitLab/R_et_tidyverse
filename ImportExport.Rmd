@@ -1,0 +1,147 @@
+---
+title: "Importer et exporter des données"
+author: "Charles Joly Beauparlant"
+date: "19/11/2021"
+output: html_document
+---
+
+## Tidyverse
+
+```{r import_tidyverse}
+library(tidyverse)
+library(openxlsx)
+library(data.table)
+```
+
+## Importer des données
+
+### Format *plain text*
+
+* `read_csv`
+* `read_tsv`
+* `read_delim`
+* `data.table::fread`
+
+Avantages des `read_*` versus les fonction de base de R:
+
+* Meilleurs paramètres par défaut
+* Généralement plus rapides
+
+Exemple d'utilisation de base:
+
+```{r read_csv_1}
+fruits <- read_csv("data/fruits.csv")
+```
+
+On peut retirer le texte en spécifiant le format des colonnes avec `col_types`:
+
+```{r read_csv_coltypes}
+fruits <- read_csv("data/fruits.csv", col_types = "cci")
+```
+
+On doit fournir une chaîne de caractère de même longueur que le nombre de colonne à importer. Les principales valeurs sont:
+
+* `c`: caractères
+* `d`: doubles
+* `i`: integer
+* `l`: logical
+
+Le texte affiché correspond au résultat de l'algorithme de détection des types de chaque colonne. Donc, en plus de retirer le texte, on peut accélérer l'importation des données en spécifiant explicitement le type des colonnes.
+
+Autres paramètres utiles:
+
+* `col_names`: Si le fichier n'a pas d'en-tête, il faut spécifier le nom des colonnes pour éviter que la première ligne soit considérée comme l'en-tête.
+* `skip`: Un entier qui dit le nombre de lignes à ignorer avant de commencer à importer les données.
+* `n_max`: Le nombre limite de ligne à importer.
+
+`data.table::fread` est **significativement** plus rapide que les autres approches pour l'importation des fichiers volumineux.
+
+Le format sera par contre en `data.table` et il faudra donc le convertir en `data.frame` ou en `tibble` si on souhaite travailler avec la `tidyverse`:
+
+```{r fread}
+fruits <- fread("data/fruits.csv")
+class(fruits)
+fruits <- as.data.frame(fruits)
+```
+
+### Formats sérialisés
+
+* `load`
+* `readRDS`
+
+La fonction `load` permet de charger des fichier `*.RData` (ou `*.rda`, `*.RDa`, etc...). Ces fichiers peuvent contenir plusieurs variables. Si le nom d'une des variables existe déjà, elle sera écrasée lors de l'importation.
+
+Exemple d'utilisation:
+
+```{r load}
+load("data/aliments.RData")
+fruits
+legumes
+```
+
+On peut afficher le nom des variables en important avec la fonction `print`:
+
+```{r load_print}
+print(load("data/aliments.RData"))
+```
+
+Les fichiers `*.rds` ne contiennent qu'un seul objet et on doit sauvegarder sa valeur dans une variable:
+
+```{r readRDS}
+fruits <- readRDS("data/fruits.rds")
+fruits
+```
+
+### Format excel
+
+* openxlsx::read.xlsx
+
+On peut appeler tout simplement en donnant le nom du fichier:
+
+```{r read_xlsx}
+fruits <- read.xlsx("data/aliments.xlsx")
+```
+
+Par défaut, c'est la première feuille qui est importée, mais on peut mentionner une autre feuille soit par son nom ou par son index:
+
+```{r read_xlsx_sheet2}
+legumes_1 <- read.xlsx("data/aliments.xlsx", sheet = 2)
+legumes_2 <- read.xlsx("data/aliments.xlsx", sheet = "legumes")
+identical(legumes_1, legumes_2)
+legumes_1
+```
+
+## Exporter des données
+
+### Format *plain text*
+
+* write_csv
+* write_tsv
+
+```{r write_}
+write_csv(fruits, "fruits.csv")
+write_tsv(legumes, "legumes.tsv")
+```
+
+### Formats sérialisés
+
+* saveRDS
+* save
+
+```{r save_saveRDS}
+save(fruits, legumes, file = "aliments.RData")
+saveRDS(fruits, "fruits.rds")
+```
+
+### Format excel
+
+* `openxlsx::write.xlsx`
+
+On peut fournir à la fonction `write.xlsx` soit un tableau ou soit une `list` nommée de tableaux. La seconde option permet de sauvegarder tous les tableaux dans le même fichier excel, une feuille par tableau. Le nom des feuilles sera le nom des éléments de la `list`:
+
+```{r write_xlsx}
+write.xlsx(fruits, "fruits.xlsx")
+
+aliments <- list(fruits = fruits, legumes = legumes)
+write.xlsx(aliments, "aliments.xlsx")
+```
